@@ -1,206 +1,257 @@
-#include <iostream>
+﻿#include <iostream>
 #include <string>
-#include <cstring>
-#include <regex>
+#include <list>
+#include <algorithm>
+#include <random>
+#include <vector>
 #include <algorithm>
 
-using namespace std;
-
-
+//defining struct
 struct CARTE {
     char titlu[24];
-    string autor;
+    std::string autor;
     int nrEx;
+    // Define the '<' operator for CARTE
+    bool operator<(const CARTE& other) const {
+        return strcmp(titlu, other.titlu) < 0;
+    }
 };
 
 
-//Add Books method
-void addBook(CARTE* carti, int* nrCarti) {
-    // Declare the variables to store the book title, author, and number of copies
-    char titlu[24];
-    string autor;
-    int nrEx=0;
+//creating single linked list
+std::list<CARTE> books;
 
-    // Book Title Validation
+//================================START Populate list with 20 books==========================================================
+void GenereazaCarti() {
+    char titluri[200][23] = {
+        "The Great Gatsby", "To Kill a Mockingbird", "1984", "The Catcher in the Rye", "Animal Farm",
+        "Pride and Prejudice", "Brave New World", "The Hobbit", "Fahrenheit 451", "Moby-Dick",
+        "War and Peace", "Madame Bovary", "The Odyssey", "Ulysses", "Don Quixote",
+        "Wuthering Heights", "The Iliad", "Beowulf", "Invisible Man", "Beloved",
+        "Ion", "Rascoala", "Padurea Spanzuratilor","Amintiri din Copilarie",
+        "Harap-Alb", "Scrisoarea a III-a"
+    };
+
+    std::string autori[] = {
+        "F. Scott Fitzgerald", "Harper Lee", "George Orwell", "J.D. Salinger",
+        "Jane Austen","Aldous Huxley", "J.R.R. Tolkien",
+        "Ray Bradbury","Herman Melville","Leo Tolstoy",
+        "Gustave Flaubert","Homer","James Joyce",
+        "Miguel de Cervantes","Emily Bronte",
+        "Homer","Anonymous","Ralph Ellison",
+        "Toni Morrison","Ioan Slavici",
+        "Liviu Rebreanu","Marin Preda","Mihai Eminescu",
+        "Ion Creanga"
+    };
+
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> disEx(1, 100);
+
+    // Get the minimum size between titluri and autori
+    int size = std::min(sizeof(titluri) / sizeof(titluri[0]), sizeof(autori) / sizeof(autori[0]));
+
+    for (int i = 0; i < size; ++i) {
+        CARTE carte;
+        strncpy_s(carte.titlu, sizeof(carte.titlu), titluri[i], _TRUNCATE);
+        carte.autor = autori[i];
+        carte.nrEx = disEx(gen);
+
+        books.push_front(carte);
+
+        std::cout << "Am Adaugat Carte: "
+            << carte.titlu << ", "
+            << carte.autor << ", "
+            << carte.nrEx << std::endl;
+    }
+
+    std::cout << "\nNr Total de carti adaugate: "
+        << std::distance(books.begin(), books.end()) << std::endl;
+}
+
+//================================END Populate list with books============================================================
+
+//================================START Add New book START==========================================================
+void AdaugaCarteNoua() {
+    CARTE carte;
+    std::string input;
+    bool valid;
+
+    // Ask for the title
     do {
-        cout << "Titlu: ";
-        cin.getline(titlu, 23);
+        std::cout << "Introduceti titlul (max 23 caractere, nu poate fi gol, nu poate exista deja in lista): ";
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        std::getline(std::cin, input);
+        valid = input.length() <= 23 && !input.empty();
 
-        if (titlu[0] == '\0' || strlen(titlu) >= 23) {
-            cout << "Eroare inputul nu poate fi fara date sau mai mare de 23 caractere, va rog reincercati" << endl;
+        // Check if the title is already in the list
+        for (const auto& book : books) {
+            if (strcmp(book.titlu, input.c_str()) == 0) {
+                valid = false;
+                std::cout << "Cartea exista deja, va rog introduceti alta carte." << std::endl;
+                break;
+            }
         }
 
-    } while (titlu[0] == '\0' || strlen(titlu) >= 23);
+        if (!valid) {
+            std::cout << "Titlu incorect. va rog reincercati (max 23 caractere, nu poate fi gol, nu poate exista deja in lista)." << std::endl;
+        }
+    } while (!valid);
 
-    // Input book author
+    strncpy_s(carte.titlu, sizeof(carte.titlu), input.c_str(), _TRUNCATE);
+
+    // Ask for the author
     do {
-        cout << "Autor: ";
-        getline(cin, autor);
+        std::cout << "Introduceti numele autorului (nu poate fi gol): ";
+        std::getline(std::cin, carte.autor);
+        valid = !carte.autor.empty();
 
-        if (autor.empty()) {
-            cout << "Eroare inputul nu poate fi fara date, va rog reincercati" << endl;
+        if (!valid) {
+            std::cout << "Date incorecte. Reincercati." <<std::endl;
         }
-    } while (autor.empty());
+    } while (!valid);
 
-    nrEx = 0;
-   
+    // Ask for the number of copies
     do {
-        cout << "Nr Exemplare: ";
-        cin >> nrEx;
-        cin.ignore();
-        if (nrEx <= 0) {
-            cout << "Eroare: Numarul de carti trebuie sa fie > 0" << endl;
+        std::cout << "Introduceti nr de exemplare (nr intreg pozitiv): ";
+        std::getline(std::cin, input);
+        carte.nrEx = std::stoi(input);
+        valid = carte.nrEx > 0;
+
+        if (!valid) {
+            std::cout << "Date incorecte. Mai incercati." << std::endl;
         }
-    } while (nrEx <= 0);
+    } while (!valid);
 
-    // if book data is valid, we add it to the list here
-    strncpy_s(carti[*nrCarti].titlu, titlu, sizeof(carti[*nrCarti].titlu));
-    carti[*nrCarti].autor = autor;
-    carti[*nrCarti].nrEx = nrEx;
+    // Add the book to the list
+    books.push_front(carte);
 
-    //increment book counter
-    (*nrCarti)++;
+    // Print the added book
+    std::cout << "Adaugat Carte: "
+        << carte.titlu << ", "
+        << carte.autor << ", "
+        << carte.nrEx << std::endl;
 }
+//================================END Add new book method============================================================
 
-//trailing/ending spaces removal
-void deleteBook(CARTE* carti, int* nrCarti, string autor) {
-    // stergem spatiile de la inceputul si sfarsitul cuvantului
-    autor.erase(0, autor.find_first_not_of(' ')); // trailing spaces
-    autor.erase(autor.find_last_not_of(' ') + 1); // ending spaces
 
-    // Gasim cartea pentru autorul dat
-    int index = -1;
-    for (int i = 0; i < *nrCarti; i++) {
-        string bookAuthor = carti[i].autor;
-        // scoatem spatiile de la inceput si sfarsit pentru Author
-        bookAuthor.erase(0, bookAuthor.find_first_not_of(' ')); // trailing spaces
-        bookAuthor.erase(bookAuthor.find_last_not_of(' ') + 1); // spatii la sfarsitul cuvantului
+//================================START Delete books filtered by author method START==========================================================
+void StergeCartiDupaAutor() {
+    std::string autor;
+    bool valid;
 
-        if (bookAuthor == autor) {
-            index = i;
-            break;
+    // Input autor
+    do {
+        std::cout << "Introduceti numele autorului (nu poate fi gol): ";
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // Adaugă această linie
+        std::getline(std::cin, autor);
+        valid = !autor.empty();
+
+        if (!valid) {
+            std::cout << "Autor invalid. Va rugam sa incercati din nou." << std::endl;
         }
-    }
+    } while (!valid);
 
-    // If the book was not found, return
-    if (index == -1) {
-        cout << "Nu s-au gasit carti de autorul " + autor << endl;
-        return;
-    }
+    // // Go through the list and remove books by the author
+    for (auto it = books.begin(); it != books.end(); /* no increment here */) {
+        if (it->autor == autor) {
+            std::cout << "Carte stearsa: "
+                << it->titlu << ", "
+                << it->autor << ", "
+                << it->nrEx << std::endl;
 
-    // Remove the book from the array
-    for (int i = index; i < *nrCarti - 1; i++) {
-        carti[i] = carti[i + 1];
-    }
-
-    // Decrement the number of books
-    (*nrCarti)--;
-}
-//method to compare books
-int compare(const void* a, const void* b)
-{
-    const CARTE* cartiA = (const CARTE*)a;
-    const CARTE* cartiB = (const CARTE*)b;
-    return strcmp(cartiA->titlu, cartiB->titlu);
-};
-
-//method to list books
-void listBooks(CARTE* carti, int* nrCarti) {
-    if (*nrCarti == 0) {
-        cout << "Nu s-au gasit carti" << endl;
-        return;
-    }
-    std::qsort(carti, *nrCarti, sizeof(CARTE), compare);
-
-    for (int i = 0; i < *nrCarti; i++) {
-        cout << carti[i].titlu << " de " << carti[i].autor << " (" << carti[i].nrEx << " exemplare)" << endl;
-    }
-}
-
-
-void listBookInfo(CARTE* carti, int* nrCarti, string autor) {
-    // Find the book with the specified author
-    int index = -1;
-    for (int i = 0; i < *nrCarti; i++) {
-        if (carti[i].autor == autor) {
-            index = i;
-            break;
+            it = books.erase(it); // erase returnează iteratorul care urmează elementului eliminat
+        }
+        else {
+            ++it; //erase returns the iterator following the removed element
         }
     }
+}
+//================================END Delete books filtered by author method END============================================================
 
-    // If the book was not found, return
-    if (index == -1) {
-        cout << "Eroare, nu s-a gasit carti pentru autorul " + autor << endl;
-        return;
+//================================START List all books in alphabetical order START==========================================================
+void ListeazaToateCartile() {
+    // Sort the list
+    books.sort();
+
+    // Print the sorted list
+    for (const auto& carte : books) {
+        std::cout << "Carte: " << carte.titlu << " - Autor: " << carte.autor << " - Nr Exemplare:  " << carte.nrEx << std::endl;
+    }
+}
+//================================END List all books in alphabetical order END============================================================
+
+
+//================================START List all books filtered by author START==========================================================
+void ListeazaCartileUnuiAutor() {
+    std::string autor;
+    bool valid;
+
+    // Ask for the author
+    do {
+        std::cout << "Va rog introduceti autorul pentru care vreti sa gasesc toate cartile: ";
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // Add this line
+        std::getline(std::cin, autor);
+        valid = !autor.empty();
+
+        if (!valid) {
+            std::cout << "Autor invalid. Va rog sa incercati din nou." << std::endl;
+        }
+    } while (!valid);
+
+    // Go through the list and print books by the author
+    bool found = false;
+    for (const auto& book : books) {
+        if (book.autor == autor) {
+            found = true;
+            std::cout << "Carte: " << book.titlu << " - Nr Exemplare: " << book.nrEx << std::endl;
+        }
     }
 
-    // Print the book information
-    cout << "Titlu: " << carti[index].titlu << endl;
-    cout << "Autor: " << carti[index].autor << endl;
-    cout << "Nr Exemplare: " << carti[index].nrEx << endl;
+    if (!found) {
+        std::cout << "Nu avem carti scrise de autorul " << autor << " in biblioteca." << std::endl;
+    }
 }
-
-
+//================================END List all books filtered by author END==========================================================
 
 int main() {
-    // Declare the array of books
-    CARTE carti[100];
-
-    // Declare the number of books
-    int nrCarti = 0;
-    char titlu[24] = {'a'};
-    string autor;
-    int nrEx = 0;
-    int choice = 0;
-
-    while (choice <1 || choice >4 ) {
-        // Display the main menu
-        cout << "1. Adauga Carte" << endl;
-        cout << "2. Sterge Carte" << endl;
-        cout << "3. Listeaza Carti Ordonate Alfabetic Dupa Titlu" << endl;
-        cout << "4. Listeaza informatii carte (dupa autor)" << endl;
-        cout << "5. Iesire Program" << endl;
-        // Get the user's choice
-        
-        cout << "Alegeti din Meniu: ";
-        cin >> choice;
-        cin.ignore();
-        if (cin.fail()) {
-            cin.clear();
-            cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-            continue;
-        }
-        // Switch on the user's choice
+    GenereazaCarti();
+    int choice;
+    do {
+        std::cout << "1) Genereaza Carti" << std::endl;
+        std::cout << "2) Adauga carte noua" << std::endl;
+        std::cout << "3) Sterge carti dupa autor" << std::endl;
+        std::cout << "4) Listeaza toate cartile ordonate alfabetic dupa titlu" << std::endl;
+        std::cout << "5) Listeaza cartile unui anumit autor" << std::endl;
+        std::cout << "6) Iesire program" << std::endl;
+        std::cout << "Alegeti o optiune: ";
+        std::cin >> choice;
         switch (choice) {
         case 1:
-            cout << "Adaug o carte..." << endl;
-            addBook(carti, &nrCarti);
-            cout << "Carte adaugata cu succes!" << endl;
+            GenereazaCarti();
+            //std::cin.ignore();
             break;
         case 2:
-            cout << "Tastati numele autorului pe care doriti sa-l stergeti... ";
-            getline(cin, autor);
-            deleteBook(carti, &nrCarti, autor);
+            AdaugaCarteNoua();
             break;
         case 3:
-            cout << "Lista de carti ..." << endl;
-            listBooks(carti, &nrCarti);
-            cout << "Lista de carti ..." << endl;
+            StergeCartiDupaAutor();
+            //std::cin.ignore();
             break;
         case 4:
-            cout << "Tastati numele autorului pentru a a-i afisa cartile... ";
-            getline(cin, autor);
-            listBookInfo(carti, &nrCarti, autor);
-            cout << "S-au afisat cartile pentru autorul " + autor;
+            ListeazaToateCartile();
+            //std::cin.ignore();
             break;
         case 5:
-            return 0;
+            ListeazaCartileUnuiAutor();
+            //std::cin.ignore();
+            break;
         default:
-            cout << "Alegeti intre 1-4, 5 pentru a iesi din program, va rog mai incercati" << endl;
+            std::cout << "Input invalid, va rog alegeti intre 1-6" << std::endl;
+            std::cin.ignore();
             break;
         }
-        // Reset choice to an invalid value
-        choice = 0;
-    }
+    } while (choice != 6);
+
     return 0;
 }
